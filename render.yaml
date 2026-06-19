@@ -3,7 +3,7 @@ services:
     name: kuntau-pay
     plan: free
     runtime: node
-    buildCommand: npm run web:build
+    buildCommand: npm install --include=dev && npm run web:build
     startCommand: npx prisma db push --schema=server/prisma/schema.prisma && node server/index.js
     envVars:
       - key: NODE_ENV
