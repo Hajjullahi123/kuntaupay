@@ -1,0 +1,101 @@
+{
+  "name": "kuntau-pay",
+  "version": "1.0.0",
+  "description": "Standalone School Payment and Fee Management System",
+  "main": "main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server:start\" \"vite\"",
+    "build": "node node_modules/vite/bin/vite.js build && node node_modules/electron-builder/out/cli/cli.js",
+    "preview": "node node_modules/vite/bin/vite.js preview",
+    "electron:dev": "node start-dev.js",
+    "electron:start": "node_modules/.bin/electron .",
+    "web:build": "node node_modules/vite/bin/vite.js build",
+    "web:preview": "node node_modules/vite/bin/vite.js preview",
+    "web:test": "concurrently \"npm run server:start\" \"npm run web:preview\"",
+    "server:start": "node server/index.js",
+    "postinstall": "prisma generate --schema=server/prisma/schema.prisma",
+    "mobile:build": "npm run web:build && npx cap sync",
+    "mobile:open:android": "npx cap open android",
+    "mobile:open:ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.x",
+    "bcryptjs": "^3.0.3",
+    "body-parser": "^1.20.2",
+    "browserslist": "^4.28.1",
+    "clsx": "^2.0.0",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "fs-extra": "^11.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^0.294.0",
+    "multer": "^2.1.1",
+    "node-releases": "^2.0.36",
+    "nodemailer": "^6.9.7",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "recharts": "^2.10.3",
+    "tailwind-merge": "^2.0.0",
+    "socket.io": "^4.7.2",
+    "socket.io-client": "^4.7.2",
+    "@capacitor/core": "^5.0.0",
+    "@capacitor/ios": "^5.0.0",
+    "@capacitor/android": "^5.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "electron": "^27.1.2",
+    "electron-builder": "^24.9.1",
+    "postcss": "^8.4.31",
+    "prisma": "^5.x",
+    "tailwindcss": "^3.3.5",
+    "vite": "^5.0.0",
+    "vite-plugin-pwa": "^1.2.0",
+    "wait-on": "^7.2.0",
+    "@capacitor/cli": "^5.0.0"
+  },
+  "build": {
+    "appId": "com.kuntau.pay",
+    "productName": "Kuntau-Pay",
+    "copyright": "Copyright © 2026 Kuntau-Pay",
+
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "dist/**/*",
+      "server/**/*",
+      "main.js",
+      "preload.js",
+      "package.json",
+      "public/**/*",
+      "node_modules/**/*",
+      "!node_modules/electron/**/*",
+      "!node_modules/electron-builder/**/*",
+      "!node_modules/prisma/**/*",
+      "!node_modules/typescript/**/*",
+      "!node_modules/vite/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Kuntau-Pay"
+    }
+  },
+  "prisma": {
+    "seed": "node server/prisma/seed.js"
+  }
+}

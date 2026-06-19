@@ -1,0 +1,372 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id                    Int                 @id @default(autoincrement())
+  name                  String
+  address               String?
+  phone                 String?
+  email                 String?
+  logoUrl               String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  status                String              @default("active") // active, archived
+  
+  // Branding & White-labeling
+  primaryColor          String?             @default("#4f46e5")
+  secondaryColor        String?             @default("#0f172a")
+  receiptHeader         String?
+  receiptFooter         String?
+
+  students              Student[]
+  academicSessions      AcademicSession[]
+  terms                 Term[]
+  classes               Class[]
+  feeRecords            FeeRecord[]
+  feePayments           FeePayment[]
+  classFeeStructures    ClassFeeStructure[]
+  auditLogs             AuditLog[]
+  scholarshipCertificates ScholarshipCertificate[]
+  miscFees              MiscellaneousFee[]
+  miscPayments          MiscellaneousPayment[]
+  staff                 Staff[]
+  staffVouchers         StaffVoucher[]
+  notifications         Notification[]
+  supportTickets        SupportTicket[]
+  parents               Parent[]
+
+  groupId               Int?
+  group                 SchoolGroup?        @relation(fields: [groupId], references: [id])
+
+  @@index([groupId])
+}
+
+model Notification {
+  id            Int      @id @default(autoincrement())
+  schoolId      Int
+  recipient     String   // Phone or Email
+  body          String
+  type          String   // SMS, WHATSAPP, EMAIL
+  status        String   @default("SENT") // SENT, FAILED
+  createdAt     DateTime @default(now())
+
+  school        School   @relation(fields: [schoolId], references: [id])
+}
+
+model SchoolGroup {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  schools   School[]
+  users     User[]
+}
+
+model User {
+  id                 Int                 @id @default(autoincrement())
+  schoolId           Int?
+  username           String              @unique
+  passwordHash       String
+  role               String              // SUPER_ADMIN, SCHOOL_ADMIN, BURSAR
+  firstName          String
+  lastName           String
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  
+  paymentsRecorded   FeePayment[]        @relation("PaymentRecorder")
+  miscPaymentsRecorded MiscellaneousPayment[] @relation("MiscPaymentRecorder")
+  feeClearances      FeeRecord[]         @relation("FeeClearance")
+  student            Student?
+  parent             Parent?
+  supportTickets     SupportTicket[]
+
+  groupId            Int?
+  group              SchoolGroup?        @relation(fields: [groupId], references: [id])
+
+  @@index([groupId])
+  @@index([schoolId])
+}
+
+model Student {
+  id                  Int                 @id @default(autoincrement())
+  schoolId            Int
+  userId              Int                 @unique
+  admissionNumber     String
+  classId             Int?
+  firstName           String?
+  lastName            String?
+  isScholarship       Boolean             @default(false)
+  scholarshipPercentage Float               @default(0)
+  status              String              @default("active")
+  createdAt           DateTime            @default(now())
+  
+  school              School              @relation(fields: [schoolId], references: [id])
+  feeRecords          FeeRecord[]
+  classModel          Class?              @relation(fields: [classId], references: [id])
+  user                User                @relation(fields: [userId], references: [id])
+  scholarshipCertificates ScholarshipCertificate[]
+  miscPayments        MiscellaneousPayment[]
+  parents             Parent[]            @relation("ParentStudents")
+
+  @@unique([schoolId, admissionNumber])
+}
+
+model AcademicSession {
+  id                Int                 @id @default(autoincrement())
+  schoolId          Int
+  name              String              // e.g. "2023/2024"
+  isCurrent         Boolean             @default(false)
+  
+  school            School              @relation(fields: [schoolId], references: [id])
+  terms             Term[]
+  feeRecords        FeeRecord[]
+  feeStructures     ClassFeeStructure[]
+  staffVouchers     StaffVoucher[]
+}
+
+model Term {
+  id                Int                 @id @default(autoincrement())
+  schoolId          Int
+  academicSessionId Int
+  name              String              // e.g. "1st Term"
+  isCurrent         Boolean             @default(false)
+  
+  school            School              @relation(fields: [schoolId], references: [id])
+  session           AcademicSession     @relation(fields: [academicSessionId], references: [id])
+  feeRecords        FeeRecord[]
+  feeStructures     ClassFeeStructure[]
+  staffVouchers     StaffVoucher[]
+}
+
+model Class {
+  id                 Int                 @id @default(autoincrement())
+  schoolId           Int
+  name               String
+  arm                String?
+  
+  school             School              @relation(fields: [schoolId], references: [id])
+  students           Student[]
+  feeStructures      ClassFeeStructure[]
+}
+
+model FeeRecord {
+  id                Int             @id @default(autoincrement())
+  schoolId          Int
+  studentId         Int
+  academicSessionId Int
+  termId            Int
+  openingBalance    Float           @default(0)
+  expectedAmount    Float
+  paidAmount        Float           @default(0)
+  balance           Float
+  isClearedForExam  Boolean         @default(true)
+  clearedBy         Int?
+  clearedAt         DateTime?
+  
+  school            School          @relation(fields: [schoolId], references: [id])
+  student           Student         @relation(fields: [studentId], references: [id])
+  session           AcademicSession @relation(fields: [academicSessionId], references: [id])
+  term              Term            @relation(fields: [termId], references: [id])
+  clearedByUser     User?           @relation("FeeClearance", fields: [clearedBy], references: [id])
+  payments          FeePayment[]
+
+  @@unique([schoolId, studentId, termId, academicSessionId])
+}
+
+model FeePayment {
+  id             Int       @id @default(autoincrement())
+  schoolId       Int
+  feeRecordId    Int
+  amount         Float
+  paymentMethod  String    @default("cash")
+  reference      String?
+  notes          String?
+  paymentDate    DateTime  @default(now())
+  recordedBy     Int
+  fingerprint    String?   @unique
+  
+  school         School    @relation(fields: [schoolId], references: [id])
+  feeRecord      FeeRecord @relation(fields: [feeRecordId], references: [id])
+  recordedByUser User      @relation("PaymentRecorder", fields: [recordedBy], references: [id])
+}
+
+model ClassFeeStructure {
+  id                Int             @id @default(autoincrement())
+  schoolId          Int
+  classId           Int
+  academicSessionId Int
+  termId            Int
+  amount            Float
+  
+  school            School          @relation(fields: [schoolId], references: [id])
+  class             Class           @relation(fields: [classId], references: [id])
+  session           AcademicSession @relation(fields: [academicSessionId], references: [id])
+  term              Term            @relation(fields: [termId], references: [id])
+
+  @@unique([schoolId, classId, termId, academicSessionId])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  schoolId  Int
+  userId    Int?
+  action    String
+  resource  String
+  details   String?
+  createdAt DateTime @default(now())
+  
+  school    School   @relation(fields: [schoolId], references: [id])
+}
+
+model ScholarshipCertificate {
+  id                Int      @id @default(autoincrement())
+  schoolId          Int
+  studentId         Int
+  certificateNumber String   @unique
+  issueDate         DateTime @default(now())
+  expiryDate        DateTime?
+  termsCovered      String? // comma separated or JSON
+
+  school            School   @relation(fields: [schoolId], references: [id])
+  student           Student  @relation(fields: [studentId], references: [id])
+}
+
+model MiscellaneousFee {
+  id            Int      @id @default(autoincrement())
+  schoolId      Int
+  name          String
+  amount        Float
+  isCompulsory  Boolean  @default(false)
+  targetClassId Int?
+  createdAt     DateTime @default(now())
+
+  school        School   @relation(fields: [schoolId], references: [id])
+  payments      MiscellaneousPayment[]
+}
+
+model MiscellaneousPayment {
+  id             Int      @id @default(autoincrement())
+  schoolId       Int
+  studentId      Int
+  miscFeeId      Int
+  amount         Float
+  paymentMethod  String   @default("cash")
+  reference      String?
+  notes          String?
+  paymentDate    DateTime @default(now())
+  recordedBy     Int
+  fingerprint    String?   @unique
+
+  school         School           @relation(fields: [schoolId], references: [id])
+  student        Student          @relation(fields: [studentId], references: [id])
+  miscFee        MiscellaneousFee @relation(fields: [miscFeeId], references: [id])
+  recordedByUser User             @relation("MiscPaymentRecorder", fields: [recordedBy], references: [id])
+}
+
+model Staff {
+  id            Int      @id @default(autoincrement())
+  schoolId      Int
+  userId        Int?     @unique
+  firstName     String
+  lastName      String
+  phone         String?
+  role          String
+  bankDetails   String?
+  baseSalary    Float    @default(0)
+  photoUrl      String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  school        School         @relation(fields: [schoolId], references: [id])
+  vouchers      StaffVoucher[]
+  complaints    StaffComplaint[]
+}
+
+model SalaryComponent {
+  id            Int      @id @default(autoincrement())
+  schoolId      Int
+  name          String
+  type          String   // ADDITION or DEDUCTION
+  defaultAmount Float    @default(0)
+
+  // Could also link to global defaults
+}
+
+model StaffVoucher {
+  id                Int      @id @default(autoincrement())
+  schoolId          Int
+  staffId           Int
+  academicSessionId Int?
+  termId            Int?
+  month             Int      // 1-12
+  year              Int
+  totalEarnings     Float
+  totalDeductions   Float
+  netAmount         Float
+  status            String   @default("PENDING") // PENDING, PAID
+  paidAt            DateTime?
+  fingerprint       String?  @unique
+  
+  school            School   @relation(fields: [schoolId], references: [id])
+  staff             Staff    @relation(fields: [staffId], references: [id])
+  session           AcademicSession? @relation(fields: [academicSessionId], references: [id])
+  term              Term?            @relation(fields: [termId], references: [id])
+  items             VoucherItem[]
+
+  createdAt         DateTime @default(now())
+}
+
+model VoucherItem {
+  id            Int      @id @default(autoincrement())
+  voucherId     Int
+  name          String
+  amount        Float
+  type          String   // ADDITION or DEDUCTION
+  explanation   String?  // Rich justification e.g. "Defaulted on lateness"
+  
+  voucher       StaffVoucher @relation(fields: [voucherId], references: [id])
+}
+
+model StaffComplaint {
+  id            Int      @id @default(autoincrement())
+  staffId       Int
+  message       String
+  status        String   @default("OPEN") // OPEN, RESOLVED
+  createdAt     DateTime @default(now())
+  resolvedAt    DateTime?
+
+  staff         Staff    @relation(fields: [staffId], references: [id])
+}
+
+model SupportTicket {
+  id            Int      @id @default(autoincrement())
+  schoolId      Int
+  userId        Int
+  subject       String
+  message       String
+  priority      String   @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  status        String   @default("OPEN")   // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  school        School   @relation(fields: [schoolId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+model Parent {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @unique
+  schoolId  Int
+  phone     String?
+  address   String?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id])
+  school    School    @relation(fields: [schoolId], references: [id])
+  students  Student[] @relation("ParentStudents")
+}
