@@ -1,6 +1,7 @@
 services:
   - type: web
     name: kuntau-pay
+    plan: free
     runtime: node
     buildCommand: npm run web:build
     startCommand: npx prisma db push --schema=server/prisma/schema.prisma && node server/index.js
