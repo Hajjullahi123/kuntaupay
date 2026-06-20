@@ -6,11 +6,24 @@ const bcrypt = require('bcryptjs');
  */
 async function getSystemStatus() {
     try {
-        const schoolCount = await prisma.school.count();
-        const adminCount = await prisma.user.count({ where: { role: 'SUPER_ADMIN' } });
+        let schoolCount = await prisma.school.count();
+        let adminCount = await prisma.user.count({ where: { role: 'SUPER_ADMIN' } });
+        
+        if (schoolCount === 0 || adminCount === 0) {
+            console.log('[SYSTEM INIT] Auto-initializing system with Kuntau Science Academy and default admin...');
+            await initializeStandalone({
+                schoolName: 'Kuntau Science Academy',
+                adminUsername: 'top-official',
+                adminPassword: 'top-off26',
+                firstName: 'Super',
+                lastName: 'Admin'
+            });
+            schoolCount = 1;
+            adminCount = 1;
+        }
         
         return {
-            isInitialized: schoolCount > 0 && adminCount > 0,
+            isInitialized: true,
             schoolCount,
             adminCount
         };
