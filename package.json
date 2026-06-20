@@ -13,7 +13,7 @@
     "web:preview": "node node_modules/vite/bin/vite.js preview",
     "web:test": "concurrently \"npm run server:start\" \"npm run web:preview\"",
     "server:start": "node server/index.js",
-    "postinstall": "prisma generate --schema=server/prisma/schema.prisma",
+    "postinstall": "node server/prisma/prepare.js && prisma generate --schema=server/prisma/schema.prisma",
     "mobile:build": "npm run web:build && npx cap sync",
     "mobile:open:android": "npx cap open android",
     "mobile:open:ios": "npx cap open ios"

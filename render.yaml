@@ -4,7 +4,7 @@ services:
     plan: free
     runtime: node
     buildCommand: npm install --include=dev && npm run web:build
-    startCommand: npx prisma db push --schema=server/prisma/schema.prisma && node server/index.js
+    startCommand: node server/prisma/prepare.js && npx prisma db push --schema=server/prisma/schema.prisma && node server/index.js
     envVars:
       - key: NODE_ENV
         value: production
