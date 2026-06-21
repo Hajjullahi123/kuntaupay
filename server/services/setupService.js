@@ -77,6 +77,34 @@ async function initializeStandalone(data) {
             }
         });
 
+        // 5. Create default School Admin
+        const schoolAdminPasswordHash = await bcrypt.hash('kuntau-adm26', 10);
+        await tx.user.create({
+            data: {
+                username: 'kuntau-admin',
+                passwordHash: schoolAdminPasswordHash,
+                firstName: 'School',
+                lastName: 'Admin',
+                role: 'SCHOOL_ADMIN',
+                groupId: group.id,
+                schoolId: school.id
+            }
+        });
+
+        // 6. Create default Bursar
+        const bursarPasswordHash = await bcrypt.hash('kuntau-bur26', 10);
+        await tx.user.create({
+            data: {
+                username: 'kuntau-bursar',
+                passwordHash: bursarPasswordHash,
+                firstName: 'School',
+                lastName: 'Bursar',
+                role: 'BURSAR',
+                groupId: group.id,
+                schoolId: school.id
+            }
+        });
+
         return { school, user };
     });
 }
